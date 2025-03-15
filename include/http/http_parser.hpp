@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include <memory>
 
-struct Request {
+struct Request
+{
     std::string method;
     std::string path;
     std::string version;
@@ -13,7 +14,8 @@ struct Request {
     std::string body;
 };
 
-struct Response {
+struct Response
+{
     int status_code;
     std::string status_message;
     std::string version;
@@ -23,13 +25,18 @@ struct Response {
 
 class Connection; // Forward declaration
 
-class HttpParser {
+class HttpParser
+{
 public:
     HttpParser();
     ~HttpParser();
 
-    Request parseRequest(const std::string& data, const Connection& conn);
-    std::string generateResponse(const Response& response, const Connection& conn);
+    Request parseRequest(const std::string &data, const Connection &conn);
+    std::string generateResponse(const Response &response, const Connection &conn);
+
+    // Simplified versions that don't require Connection
+    Request parseRequest(const std::string &data);
+    std::string generateResponse(const Response &response);
 
 private:
     struct Impl;

@@ -85,6 +85,65 @@ HttpParser::HttpParser() : pimpl_(std::make_unique<Impl>()) {}
 
 HttpParser::~HttpParser() = default;
 
+Request HttpParser::parseRequest(const std::string &data)
+{
+    // HTTP/1.1 parsing only
+    std::istringstream stream(data);
+    std::string line;
+    std::getline(stream, line);
+
+    std::istringstream request_line(line);
+    std::string method, path, version;
+    request_line >> method >> path >> version;
+
+    if (method.empty() || path.empty() || version.empty())
+    {
+        throw std::runtime_error("Invalid HTTP/1.1 request line");
+    }
+
+    Request request;
+    request.method = method;
+    request.path = path;
+    request.version = version;
+
+    while (std::getline(stream, line) && line != "\r")
+    {
+        auto pos = line.find(':');
+        if (pos != std::string::npos)
+        {
+            std::string key = line.substr(0, pos);
+            std::string value = line.substr(pos + 2, line.size() - pos - 3); // Remove \r\n
+            request.headers[key] = value;
+        }
+    }
+
+    std::string body;
+    while (std::getline(stream, line))
+    {
+        body += line + "\n";
+    }
+    request.body = body;
+
+    std::cout << "Parsed HTTP/1.1 request: " << method << " " << path << " " << version << std::endl;
+    return request;
+}
+
+std::string HttpParser::generateResponse(const Response &response)
+{
+    // HTTP/1.1 response generation only
+    std::stringstream ss;
+    ss << response.version << " " << response.status_code << " " << response.status_message << "\r\n";
+
+    for (const auto &header : response.headers)
+    {
+        ss << header.first << ": " << header.second << "\r\n";
+    }
+
+    ss << "\r\n"
+       << response.body;
+    return ss.str();
+}
+
 Request HttpParser::parseRequest(const std::string &data, const Connection &conn)
 {
     if (conn.is_http2())
@@ -156,7 +215,7 @@ std::string HttpParser::generateResponse(const Response &response, const Connect
         }
         catch (const std::out_of_range &)
         {
-            content_type = "text/html"; 
+            content_type = "text/html";
         }
 
         nghttp2_nv hdrs[] = {
@@ -175,10 +234,9 @@ std::string HttpParser::generateResponse(const Response &response, const Connect
                 NGHTTP2_NV_FLAG_NONE             // flags
             }};
 
-       
-        int stream_id = 1; 
+        int stream_id = 1;
         nghttp2_data_provider data_prd{};
-        std::string response_body = response.body; 
+        std::string response_body = response.body;
         data_prd.source.ptr = &response_body;
         data_prd.read_callback = [](nghttp2_session *session, int32_t stream_id, uint8_t *buf,
                                     size_t length, uint32_t *data_flags, nghttp2_data_source *source,
