@@ -1,8 +1,7 @@
 #ifndef L7_PROXY_HPP
 #define L7_PROXY_HPP
 
-#include "http/request.hpp"
-#include "http/response.hpp"
+#include "./http/http_parser.hpp" 
 #include <string>
 
 class L7Proxy {

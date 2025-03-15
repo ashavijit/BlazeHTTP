@@ -1,10 +1,8 @@
 #ifndef CONNECTION_HPP
 #define CONNECTION_HPP
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 #include <string>
-#include <functional>
+#include <openssl/ssl.h>
 
 class Connection {
 public:
@@ -12,16 +10,16 @@ public:
     ~Connection();
 
     ssize_t read(char* buffer, size_t len);
-
     ssize_t write(const char* buffer, size_t len);
-
     int accept();
+    bool is_http2() const; 
 
 private:
     int fd_;
     bool use_tls_;
     SSL_CTX* ssl_ctx_;
     SSL* ssl_;
+    bool is_http2_;
 };
 
 #endif // CONNECTION_HPP

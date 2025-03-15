@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include "http_parser.hpp"
 
 class Request {
 public:

@@ -15,7 +15,6 @@
 
 int main() {
     try {
-        // Configuration
         const int PORT = 8080;
         const bool USE_TLS = true;
         const std::string CERT_FILE = "server.crt";
@@ -23,10 +22,9 @@ int main() {
         const std::string STATIC_ROOT = "./static";
         const std::string BACKEND_HOST = "127.0.0.1";
         const int BACKEND_PORT = 8081;
-        const size_t NUM_WORKERS = 16;
+        const size_t NUM_WORKERS = std::thread::hardware_concurrency();
         const size_t CACHE_SIZE = 100;
 
-        // Initialize components
         EventLoop event_loop;
         WorkerPool worker_pool(NUM_WORKERS);
         HttpParser http_parser;
@@ -34,7 +32,6 @@ int main() {
         L7Proxy proxy(BACKEND_HOST, BACKEND_PORT);
         Cache cache(CACHE_SIZE);
 
-        // Set up listening socket
         int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (listen_fd == -1) {
             throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
@@ -60,7 +57,6 @@ int main() {
 
         std::cout << "Server listening on port " << PORT << " with TLS: " << (USE_TLS ? "true" : "false") << std::endl;
 
-        // Event loop callback for new connections
         event_loop.addFd(listen_fd, EPOLLIN, [&](int fd, uint32_t events) {
             std::cout << "Event loop triggered for fd " << fd << " with events " << events << std::endl;
 
@@ -88,7 +84,7 @@ int main() {
                     std::cout << "Read " << bytes_read << " bytes from fd " << client_fd << std::endl;
 
                     std::string request_data(buffer, bytes_read);
-                    Request request = http_parser.parseRequest(request_data);
+                    Request request = http_parser.parseRequest(request_data, conn);
 
                     std::cout << "Parsed request: " << request.method << " " << request.path << " " << request.version << std::endl;
 
@@ -109,7 +105,7 @@ int main() {
                         response = static_file.serve(request.path);
                     }
 
-                    std::string response_data = http_parser.generateResponse(response);
+                    std::string response_data = http_parser.generateResponse(response, conn);
                     cache.put(request.path, response_data);
 
                     std::cout << "Sending response for " << request.path << std::endl;

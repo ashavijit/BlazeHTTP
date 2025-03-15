@@ -1,7 +1,7 @@
 #ifndef STATIC_FILE_HPP
 #define STATIC_FILE_HPP
 
-#include "http/response.hpp"
+#include "http_parser.hpp" // Updated to include http_parser.hpp directly
 #include <string>
 
 class StaticFile {
