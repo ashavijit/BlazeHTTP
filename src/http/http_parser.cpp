@@ -1,8 +1,11 @@
 #include "http/http_parser.hpp"
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
 
 Request HttpParser::parseRequest(const std::string& data) {
+    std::cout << "Parsing request data: " << data << std::endl;
+
     std::istringstream stream(data);
     std::string line;
     std::getline(stream, line);
@@ -35,6 +38,7 @@ Request HttpParser::parseRequest(const std::string& data) {
     }
     request.body = body;
 
+    // std::cout << "Parsed request: " << method << " " << path << " " << version << std::endl;
     return request;
 }
 
@@ -44,6 +48,10 @@ std::string HttpParser::generateResponse(const Response& response) {
     for (const auto& header : response.headers) {
         stream << header.first << ": " << header.second << "\r\n";
     }
+    // stream << "Content-Length: " << response.body.size() << "\r\n"; // Add Content-Length
     stream << "\r\n" << response.body;
-    return stream.str();
+
+    std::string response_data = stream.str();
+    std::cout << "Generated response data: " << response_data << std::endl;
+    return response_data;
 }

@@ -1,3 +1,42 @@
+#!/bin/bash
+
+PORT=8080
+USE_TLS=true
+CERT_FILE="server.crt"
+KEY_FILE="server.key"
+STATIC_ROOT="./static"
+BACKEND_HOST="127.0.0.1"
+BACKEND_PORT=8081
+NUM_WORKERS=$(nproc)  
+CACHE_SIZE=100
+
+BUILD_DIR="./build"
+SOURCE_FILE="src/main.cpp"
+EXECUTABLE="$BUILD_DIR/http_server"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+generate_certificates() {
+    if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
+        echo "Certificates not found. Generating self-signed certificate and key..."
+        openssl req -x509 -newkey rsa:2048 -keyout "$KEY_FILE" -out "$CERT_FILE" -days 365 -nodes \
+            -subj "/C=IN/ST=WB/L=Ok/O=test/OU=test/CN=blaze" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Certificates generated successfully: $CERT_FILE, $KEY_FILE${NC}"
+        else
+            echo -e "${RED}Failed to generate certificates. Ensure OpenSSL is installed.${NC}"
+            exit 1
+        fi
+    else
+        echo "Certificates already exist: $CERT_FILE, $KEY_FILE"
+    fi
+}
+
+update_main_cpp() {
+    echo "Updating $SOURCE_FILE with configuration..."
+    cat > "$SOURCE_FILE" << EOL
 #include "core/event_loop.hpp"
 #include "core/worker_pool.hpp"
 #include "core/connection.hpp"
@@ -16,15 +55,15 @@
 int main() {
     try {
         // Configuration
-        const int PORT = 8080;
-        const bool USE_TLS = true;
-        const std::string CERT_FILE = "server.crt";
-        const std::string KEY_FILE = "server.key";
-        const std::string STATIC_ROOT = "./static";
-        const std::string BACKEND_HOST = "127.0.0.1";
-        const int BACKEND_PORT = 8081;
-        const size_t NUM_WORKERS = 16;
-        const size_t CACHE_SIZE = 100;
+        const int PORT = $PORT;
+        const bool USE_TLS = $USE_TLS;
+        const std::string CERT_FILE = "$CERT_FILE";
+        const std::string KEY_FILE = "$KEY_FILE";
+        const std::string STATIC_ROOT = "$STATIC_ROOT";
+        const std::string BACKEND_HOST = "$BACKEND_HOST";
+        const int BACKEND_PORT = $BACKEND_PORT;
+        const size_t NUM_WORKERS = $NUM_WORKERS;
+        const size_t CACHE_SIZE = $CACHE_SIZE;
 
         // Initialize components
         EventLoop event_loop;
@@ -139,3 +178,52 @@ int main() {
 
     return 0;
 }
+EOL
+}
+
+build_server() {
+    echo "Building server..."
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR" || exit 1
+    cmake .. || { echo -e "${RED}CMake failed${NC}"; exit 1; }
+    make || { echo -e "${RED}Make failed${NC}"; exit 1; }
+    cd - || exit 1
+    echo -e "${GREEN}Build completed successfully${NC}"
+}
+
+run_server() {
+    if [ ! -f "$EXECUTABLE" ]; then
+        echo -e "${RED}Executable not found: $EXECUTABLE. Please build the server first.${NC}"
+        exit 1
+    fi
+    echo "Starting server with the following configuration:"
+    echo "  PORT: $PORT"
+    echo "  USE_TLS: $USE_TLS"
+    echo "  CERT_FILE: $CERT_FILE"
+    echo "  KEY_FILE: $KEY_FILE"
+    echo "  STATIC_ROOT: $STATIC_ROOT"
+    echo "  BACKEND_HOST: $BACKEND_HOST"
+    echo "  BACKEND_PORT: $BACKEND_PORT"
+    echo "  NUM_WORKERS: $NUM_WORKERS"
+    echo "  CACHE_SIZE: $CACHE_SIZE"
+    echo "Running server..."
+    "$EXECUTABLE"
+}
+
+echo "Configuring and starting BlazeHTTP server..."
+
+if [ ! -d "$STATIC_ROOT" ]; then
+    echo "Creating static directory: $STATIC_ROOT"
+    mkdir -p "$STATIC_ROOT"
+    echo "Hello, World!" > "$STATIC_ROOT/index.html"
+fi
+
+if [ "$USE_TLS" = true ]; then
+    generate_certificates
+fi
+
+update_main_cpp
+
+
+build_server
+run_server
