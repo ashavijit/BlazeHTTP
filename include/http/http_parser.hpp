@@ -34,13 +34,12 @@ public:
     Request parseRequest(const std::string &data, const Connection &conn);
     std::string generateResponse(const Response &response, const Connection &conn);
 
-    // Simplified versions that don't require Connection
     Request parseRequest(const std::string &data);
     std::string generateResponse(const Response &response);
 
 private:
     struct Impl;
-    std::unique_ptr<Impl> pimpl_; // Pimpl idiom for nghttp2 session
+    std::unique_ptr<Impl> pimpl_; 
 };
 
 #endif // HTTP_PARSER_HPP

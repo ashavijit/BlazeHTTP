@@ -16,18 +16,15 @@ public:
     EventLoop();
     ~EventLoop();
 
-    // Add a file descriptor to monitor
     void addFd(int fd, uint32_t events, std::function<void(int, uint32_t)> callback);
 
-    // Remove a file descriptor from monitoring
     void removeFd(int fd);
 
-    // Run the event loop
     void run();
 
 private:
     int event_fd_; // epoll or kqueue file descriptor
-    std::unordered_map<int, std::function<void(int, uint32_t)>> callbacks_; // Map fd to callback
+    std::unordered_map<int, std::function<void(int, uint32_t)>> callbacks_; 
 };
 
 #endif // EVENT_LOOP_HPP

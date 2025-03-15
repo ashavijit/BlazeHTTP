@@ -148,7 +148,6 @@ Request HttpParser::parseRequest(const std::string &data, const Connection &conn
 {
     if (conn.is_http2())
     {
-        // HTTP/2 parsing with nghttp2
         ssize_t readlen = nghttp2_session_mem_recv(pimpl_->session,
                                                    reinterpret_cast<const uint8_t *>(data.data()),
                                                    data.size());
@@ -161,7 +160,6 @@ Request HttpParser::parseRequest(const std::string &data, const Connection &conn
     }
     else
     {
-        // HTTP/1.1 parsing
         std::istringstream stream(data);
         std::string line;
         std::getline(stream, line);

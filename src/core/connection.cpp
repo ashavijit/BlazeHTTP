@@ -49,7 +49,6 @@ Connection::Connection(int fd, bool use_tls, const std::string& cert_file, const
             throw std::runtime_error("SSL handshake failed with error code: " + std::to_string(err_code));
         }
 
-        // Check negotiated protocol
         const unsigned char *negotiated_proto;
         unsigned int proto_len;
         SSL_get0_alpn_selected(ssl_, &negotiated_proto, &proto_len);

@@ -29,7 +29,7 @@ void EventLoop::addFd(int fd, uint32_t events, std::function<void(int, uint32_t)
 #ifdef __linux__
     struct epoll_event ev;
     ev.events = events;
-    ev.data.fd = fd; // Store fd in data.fd for retrieval
+    ev.data.fd = fd; 
     if (epoll_ctl(event_fd_, EPOLL_CTL_ADD, fd, &ev) == -1) {
         throw std::runtime_error("Failed to add fd to epoll: " + std::string(strerror(errno)));
     }
